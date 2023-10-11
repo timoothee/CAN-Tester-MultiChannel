@@ -1,35 +1,14 @@
-from tkinter import *
-from tkinter.ttk import Progressbar
-import time
-from tkinter import ttk
-import ast
-import os
-from tkinter import messagebox
-import sys
-#from tkmacosx import Button
-import can_module as CAN_module
-import can_frame as CAN_frame
-import test_canbus as Can_Test
-import fade
-import psutil
-import platform
-import threading
-from tkinter.filedialog import asksaveasfile
-import random
-from PIL import Image, ImageTk
-import subprocess
-import webbrowser
-from collections import Counter
-from tkinter import font
+from lib import *
 
 class CANGui():
     def __init__(self, gui_revision: str):
         fade.leds_init()
-        self.splash()
+        #self.splash()
         self.gui_revision = gui_revision
         self.root = Tk()
         self.root.wm_attributes('-type', 'splash')
         self.root.geometry("{0}x{1}+0+0".format(self.root.winfo_screenwidth(), self.root.winfo_screenheight()))
+        print('-', self.root.winfo_screenwidth(),'--', self.root.winfo_screenheight())
         self.root.title(f"CanInterfaceGUI {self.gui_revision}")
         #self.root.iconbitmap("./Raspberry icon/Raspberry.ico")
         
@@ -469,7 +448,7 @@ class CANGui():
         self.info_listbox_label.grid(row=0, column=0, sticky='w', pady=(5,0))
         self.info_listbox_label.config(font=('Helvetica bold', 13))
 
-        self.info_listbox =Listbox(self.can_frame8_1, width = 50, height=7, selectmode=EXTENDED)
+        self.info_listbox =Listbox(self.can_frame8_1, width = 50, height=7,  bg='black', fg='white', selectmode=EXTENDED)
         self.info_listbox.grid(row=1, column= 0, pady=5)
 
         self.ep_label = Label(self.can_frame8_1, text='  ')
@@ -514,10 +493,10 @@ class CANGui():
         try:
             self.image_dimenion = PhotoImage(file="/home/raspberry/CAN-Tester/images/Continental-Logo.png")
             continental_logo_width, continental_logo_height = self.image_dimenion.width(), self.image_dimenion.height()
-            self.imagee = Image.open(r"/home/raspberry/CAN-Tester/images/Continental-Logo.png").resize((continental_logo_width+220, continental_logo_height+50), Image.ANTIALIAS)
+            self.imagee = Image.open(r"/home/raspberry/CAN-Tester/images/Continental-Logo.png").resize((continental_logo_width+130, continental_logo_height+30), Image.ANTIALIAS)
             self.imagee = ImageTk.PhotoImage(self.imagee)
             self.label1 = Label(self.empty_can_frame1, image= self.imagee)
-            self.label1.grid(row=0, column=1)
+            self.label1.grid(row=0, column=0)
         except:
             self.label1 = Label(self.empty_can_frame1, text= 'Missing Continental Logo Image\nPlease contact developer,git\nbelow you can find e-mail address')
             self.label1.grid(row=0, column=0, padx=50, pady=(50,0))
@@ -576,8 +555,6 @@ class CANGui():
 
     def bus_thread(self):
         if self.thread_var.get() == 1:
-            self.test_listbox = Listbox(self.can_frame6, bg='black', fg='white', activestyle='underline', height=15, width=25, selectmode = EXTENDED)
-            self.test_listbox.grid(row=1, column=1, sticky='e')
             #self.test_listbox.bindtags((self.test_listbox, self.can_frame6, 'all'))
             self.start_thread_btn.config(state='normal')
             test_thread = threading.Thread(target=self.thread_1, daemon=True)
@@ -587,34 +564,55 @@ class CANGui():
             test_mode = self.see_only_dropdown_var.get()
         else:
             self.start_thread_btn.config(state='disabled')
-            self.test_listbox.destroy()
 
     def thread_1(self):
-        log_file = open(self.module_sender.get_rasp_path() + 'can.log', 'r')
-        index = len(log_file.readlines())
-        log_file.seek(0)
+        index = self.can_bus_listbox.size()
         str_1 = str(index) + ' messages already sent'
         output_list = [str_1, 'This messages will not be verified']
-        self.test_listbox.insert(0, output_list[0])
+        self.info_listbox.insert(0, output_list[0])
         time.sleep(0.2)
-        self.test_listbox.insert(1, output_list[1])
+        self.info_listbox.insert(1, output_list[1])
+        df_tx_bytes = int(os.popen(f"cat /sys/class/net/can0/statistics/tx_packets").read().strip())
+        df_rx_bytes = int(os.popen(f"cat /sys/class/net/can1/statistics/rx_packets").read().strip())
+        red_flag = 0
+        blue_flag = 0
         while self.thread_var.get() == 1:
-            log_file.seek(0)
-            if int(len(log_file.readlines())) != int(index):
-                log_file.seek(0)
-                if len(log_file.readlines()) > index:
-                    log_file.seek(0)
-                    x = self.module_sender.get_messages()
-                    if x != 0:
-                        self.test_listbox.insert('end', 'I sent a message')
-                        index = len(log_file.readlines())
-                        log_file.seek(0)
-                        self.module_sender.set_messages(0)
+            tx_bytes = int(os.popen(f"cat /sys/class/net/can0/statistics/tx_packets").read().strip())
+            rx_bytes = int(os.popen(f"cat /sys/class/net/can1/statistics/rx_packets").read().strip())
+            print('tx = ', tx_bytes, ' rx=', rx_bytes, ' df_tx =', df_tx_bytes, 'df_rx =', df_rx_bytes)
+            time.sleep(0.5)
+            if tx_bytes != df_tx_bytes or rx_bytes != df_rx_bytes:
+                print('Message was sent')
+                self.info_listbox.insert(0, tx_bytes)
+                self.info_listbox.insert(1, rx_bytes)
+                if self.can_bus_listbox.size() > index:
+                    print('Listbox incremented')
+                    index = self.can_bus_listbox.size()
+                    print('tx diff= ', tx_bytes - df_tx_bytes, ' rx diff= ', rx_bytes - df_rx_bytes, ' index= ', index)
+                    if tx_bytes - df_tx_bytes == rx_bytes - df_rx_bytes and blue_flag != 1:
+                        print('First case')
+                        self.info_listbox.insert(3, 'I sent a message')
+                        index = self.can_bus_listbox.size()
+                        #self.module_sender.set_messages(0)
+                        red_flag = 1
+                        self.info_listbox.insert(4, str(red_flag))
                     else:
-                        self.test_listbox.insert('end', 'I received a message')
-                        index = len(log_file.readlines())
-                        log_file.seek(0)
+                        print('Second case')
+                        self.info_listbox.insert(3, 'I received a message')
+                        if red_flag == 0:
+                            os.popen(f"cansend can0 123#112233", 'w', 128)
+                            #blue_flag = 1
+                        else:
+                            red_flag = 0
+                        tx_bytes = int(os.popen(f"cat /sys/class/net/can0/statistics/tx_packets").read().strip())
+                        rx_bytes = int(os.popen(f"cat /sys/class/net/can1/statistics/rx_packets").read().strip())
+                        df_tx_bytes = tx_bytes 
+                        df_rx_bytes = rx_bytes
+                        index = self.can_bus_listbox.size()
+                        self.info_listbox.insert(4, str(red_flag))
+                    
                 else:
+                    print('ERROR')
                     index = 0
 
     def thread_1_2(self):
@@ -934,8 +932,8 @@ class CANGui():
         self.label.grid(row=2, column=0, sticky='w', padx=(20,0), pady=(30,0))
         self.imagee = Image.open(r"/home/raspberry/CAN-Tester/images/Continental-Logo.png").resize((self.continental_logo_width, self.continental_logo_height), Image.ANTIALIAS)
         self.imagee = ImageTk.PhotoImage(self.imagee)
-        self.label1 = Label(self.can_frame7, image= self.imagee, highlightbackground='blue', highlightthickness=5)
-        self.label1.grid(row=2, column=2, padx=(100,0))
+        self.label1 = Label(self.can_frame7, image= self.imagee)
+        self.label1.grid(row=2, column=1, padx=(10,0))
         #self.label2 = Label(self.can_frame8, text='timotei.sandru@continental-corporation.com', font='Helvetica 11 bold')
         #self.label2.grid(row=3, column=0, sticky='e')
         
