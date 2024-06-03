@@ -3,7 +3,7 @@ from lib import *
 class CANGui():
     def __init__(self, gui_revision: str):
         fade.leds_init()
-        #self.splash()
+        self.splash()
         self.gui_revision = gui_revision
         self.root = Tk()
         self.root.wm_attributes('-type', 'splash')
