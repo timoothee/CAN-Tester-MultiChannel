@@ -12,6 +12,7 @@ class CanModule():
         self.sample_point = sample_point
         self.dsample_point = ''
         self.can_status_var = False
+        self.response = 0
         self.mux_led_pos = [4, 17, 27, 22, 5, 6, 13, 26]
         self.sel_pins = [23, 16, 7]
         self.msg = ''
@@ -38,9 +39,15 @@ class CanModule():
 
     def set_message_flag(self, msg: int):
         self.flag_msg = msg
-
+        
     def get_message_flag(self):
         return self.flag_msg
+
+    def set_response(self, rsp):
+        self.response = rsp
+
+    def get_response(self):
+        return self.response
 
     def set_rasp_path(self, path):
         self.rasp_path = path
@@ -99,7 +106,6 @@ class CanModule():
             if 'dsample-point' in line:
                 return line.split()[-1]
 
-    
     def interface_up(self):
         os.popen(f"sudo ip link set {self.module_name} up type can bitrate {self.baudrate}  dbitrate {self.dbaudrate} restart-ms 1000 berr-reporting on fd on dsample-point {self.dsample_point}", 'w', 128)
         print(f"sudo ip link set {self.module_name} up type can bitrate {self.baudrate}  dbitrate {self.dbaudrate} restart-ms 1000 berr-reporting on fd on dsample-point {self.dsample_point}")
@@ -116,8 +122,7 @@ class CanModule():
         os.popen(f"sudo ip link set {self.module_name} down",'w', 128)
 
     def send_q(self, id_list: str, brs_list, payload_list, fd_list, led_pin: int):
-        self.set_messages(1)
-        print(f"module name {self.module_name}, id list {id_list}, brs {brs_list}, payload {payload_list}")
+        print(f"module name {type(self.module_name)}, id list {type(id_list)}, brs {type(brs_list)}, payload {type(payload_list)}")
         if payload_list == "R":
             #GPIO.output(self.mux_led_pos[led_pin],GPIO.HIGH)
             GPIO.output(self.mux_led_pos[led_pin],GPIO.LOW)
@@ -131,6 +136,12 @@ class CanModule():
             GPIO.output(self.mux_led_pos[led_pin],GPIO.LOW)
             os.popen(f"cansend {self.module_name} {id_list}##{brs_list}{payload_list}", 'w', 128)
             print(f"cansend {self.module_name} {id_list}##{brs_list}{payload_list}")
+        
+        if self.get_message_flag() == 0:
+            self.set_message_flag(1)
+        elif self.get_message_flag() == 1:
+            self.set_message_flag(2)
+        print('module_sender', self.flag_msg)
         
     def mux_led_control_on(self, led_pin: int):
         GPIO.output(self.mux_led_pos[led_pin],GPIO.HIGH)
@@ -148,6 +159,11 @@ class CanModule():
         GPIO.output(self.mux_led_pos[led_pin],GPIO.HIGH)
         os.popen(f"cansend {self.module_name} {message}")
         GPIO.output(self.mux_led_pos[led_pin],GPIO.LOW)
+        if self.get_message_flag() == 0:
+            self.set_message_flag(1)
+        elif self.get_message_flag() == 1:
+            self.set_message_flag(2)
+        print('random module_sender', self.flag_msg)
 
     def default_canup(self):
         os.popen(f"sudo ip link set can0 up type can bitrate 1000000  dbitrate 5000000 restart-ms 1000 berr-reporting on fd on", 'w')
