@@ -837,10 +837,10 @@ class CANGui():
         self.info_listbox_testmode()
 
     def open_git_url(self):
-        webbrowser.open("https://github.com/timoothee/CAN-Tester")
+        webbrowser.open("https://github.com/timoothee/CAN-Tester-MultiChannel")
 
     def open_release_url(self):
-        webbrowser.open("https://github.com/timoothee/CAN-Tester/releases")      
+        webbrowser.open("https://github.com/timoothee/CAN-Tester-MultiChannel/releases")      
         
     def sensor_temp(self):
         slash_list = ['|','/','-','\\']
@@ -895,7 +895,7 @@ class CANGui():
         self.welcome_fr2 = Frame(self.welcome_root)
         self.welcome_fr2.grid(row=1, column=0)
         self.welcome_root.geometry("800x550")
-        self.image = Image.open('/home/raspberry/CAN-Tester/images/welcome/one.png')
+        self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/one.png')
         imagee = self.image.resize((800, 500), Image.ANTIALIAS)
         new_imagee = ImageTk.PhotoImage(imagee)
         self.label1 = Label(self.welcome_root, image= new_imagee)
@@ -909,7 +909,7 @@ class CANGui():
     def case_scenario(self):
         self.case += 1
         if self.case == 10:
-            self.image = Image.open('/home/raspberry/CAN-Tester/images/welcome/one.png')
+            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/one.png')
             imagee = self.image.resize((800, 500), Image.ANTIALIAS)
             new_imagee = ImageTk.PhotoImage(imagee)
             self.label1 = Label(self.welcome_root, image= new_imagee)
@@ -917,7 +917,7 @@ class CANGui():
             self.label1.grid(row=0, column=0)
             self.welcome_root.geometry("800x550")
         if self.case == 2:
-            self.image = Image.open('/home/raspberry/CAN-Tester/images/welcome/two.png')
+            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/two.png')
             imagee = self.image.resize((800, 500), Image.ANTIALIAS)
             new_imagee = ImageTk.PhotoImage(imagee)
             self.label1 = Label(self.welcome_root, image= new_imagee)
@@ -925,14 +925,14 @@ class CANGui():
             self.label1.grid(row=0, column=0)
             
         if self.case == 3:
-            self.image = Image.open('/home/raspberry/CAN-Tester/images/welcome/three.png')
+            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/three.png')
             imagee = self.image.resize((800, 500), Image.ANTIALIAS)
             new_imagee = ImageTk.PhotoImage(imagee)
             self.label1 = Label(self.welcome_root, image= new_imagee)
             self.label_image=new_imagee
             self.label1.grid(row=0, column=0)
         if self.case == 4:
-            self.image = Image.open('/home/raspberry/CAN-Tester/images/welcome/four.png')
+            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/four.png')
             imagee = self.image.resize((800, 500), Image.ANTIALIAS)
             new_imagee = ImageTk.PhotoImage(imagee)
             self.label1 = Label(self.welcome_root, image= new_imagee)
@@ -940,7 +940,7 @@ class CANGui():
             self.label1.grid(row=0, column=0)
             
         if self.case == 5:
-            self.image = Image.open('/home/raspberry/CAN-Tester/images/welcome/five.png')
+            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/five.png')
             imagee = self.image.resize((800, 500), Image.ANTIALIAS)
             new_imagee = ImageTk.PhotoImage(imagee)
             self.label1 = Label(self.welcome_root, image= new_imagee)
@@ -948,7 +948,7 @@ class CANGui():
             self.label1.grid(row=0, column=0)
             
         if self.case == 6:
-            self.image = Image.open('/home/raspberry/CAN-Tester/images/welcome/six.png')
+            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/six.png')
             imagee = self.image.resize((800, 500), Image.ANTIALIAS)
             new_imagee = ImageTk.PhotoImage(imagee)
             self.label1 = Label(self.welcome_root, image= new_imagee)
@@ -956,7 +956,7 @@ class CANGui():
             self.label1.grid(row=0, column=0)
             
         if self.case == 7:
-            self.image = Image.open('/home/raspberry/CAN-Tester/images/welcome/seven.png')
+            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/seven.png')
             imagee = self.image.resize((800, 500), Image.ANTIALIAS)
             new_imagee = ImageTk.PhotoImage(imagee)
             self.label1 = Label(self.welcome_root, image= new_imagee)
@@ -992,7 +992,7 @@ class CANGui():
         
         self.label = Label(self.can_frame7, text='Powered by: ICSolution', font='Helvetica 11 bold')
         self.label.grid(row=2, column=0, sticky='w', padx=(20,0), pady=(30,0))
-        self.imagee = Image.open(r"/home/raspberry/CAN-Tester/images/Continental-Logo.png").resize((self.continental_logo_width, self.continental_logo_height), Image.ANTIALIAS)
+        self.imagee = Image.open(r"/home/raspberry/CAN-Tester-MultiChannel/images/Continental-Logo.png").resize((self.continental_logo_width, self.continental_logo_height), Image.ANTIALIAS)
         self.imagee = ImageTk.PhotoImage(self.imagee)
         self.label1 = Label(self.can_frame7, image= self.imagee, highlightbackground='blue', highlightthickness=5)
         self.label1.grid(row=2, column=2, padx=(100,0))
@@ -1027,7 +1027,7 @@ class CANGui():
         self.can_frame11.grid_forget()
         self.label.grid_forget()
         self.label1.grid_forget()
-        self.imagee = Image.open(r"/home/raspberry/CAN-Tester/images/Continental-Logo.png").resize((self.continental_logo_width+130, self.continental_logo_height+30), Image.ANTIALIAS)
+        self.imagee = Image.open(r"/home/raspberry/CAN-Tester-MultiChannel/images/Continental-Logo.png").resize((self.continental_logo_width+130, self.continental_logo_height+30), Image.ANTIALIAS)
         self.imagee = ImageTk.PhotoImage(self.imagee)
         self.label1 = Label(self.can_frame12, image= self.imagee)
         self.label1.grid(row=0, column=0, padx=10, pady=(50,0))
@@ -1649,7 +1649,7 @@ class SplashScreen:
     def __init__(self, parent):
         self.parent = parent
 
-        self.logo_image = Image.open(r"/home/raspberry/CAN-Tester/images/photo.png").resize((500, 250), Image.ANTIALIAS)
+        self.logo_image = Image.open(r"/home/raspberry/CAN-Tester-MultiChannel/images/photo.png").resize((500, 250), Image.ANTIALIAS)
         self.logo_animation = ImageTk.PhotoImage(self.logo_image)
         self.parent.overrideredirect(True)
         screen_width = self.parent.winfo_screenwidth()
