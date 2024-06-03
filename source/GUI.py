@@ -8,9 +8,7 @@ class CANGui():
         self.root = Tk()
         self.root.wm_attributes('-type', 'splash')
         self.root.geometry("{0}x{1}+0+0".format(self.root.winfo_screenwidth(), self.root.winfo_screenheight()))
-        print('-', self.root.winfo_screenwidth(),'--', self.root.winfo_screenheight())
         self.root.title(f"CanInterfaceGUI {self.gui_revision}")
-        #self.root.iconbitmap("./Raspberry icon/Raspberry.ico")
         
         # --- Menu Options
         self.menu_bar = Menu(self.root, bg="grey")
@@ -20,13 +18,21 @@ class CANGui():
         self.blankenu = Menu(self.menu_bar, tearoff=0)
         self.canrasp = Menu(self.menu_bar, tearoff=0)
 
-        self.ico = PhotoImage(file="/home/raspberry/CAN-Tester-MultiChannel/images/button.png")
+        self.ico = PhotoImage(file="/home/raspberry/CAN-Tester/images/button.png")
+        self.master_var = IntVar(self.root)
+        self.master_var.set(1)
+        self.device_mode = 1
+        self.slave_var = IntVar(self.root)
 
         self.general.add_command(label="About CANrasp", command=self.open_git_url)
         self.general.add_command(label="Check for Updates...", command=self.open_release_url)
         self.general.add_separator()
         self.cpu_sensor = Menu(self.general, tearoff=0)
+        self.mode = Menu(self.general, tearoff=0)
         self.general.add_cascade(label="Sensors", menu=self.cpu_sensor)
+        self.general.add_cascade(label="Mode", menu=self.mode)
+        self.mode.add_radiobutton(label ='Master',command=lambda: self.set_mode_option(1), var=self.master_var, value=1)
+        self.mode.add_radiobutton(label ='Slave', command=lambda: self.set_mode_option(2), var=self.slave_var, value=1)
         self.general.add_separator()
         self.general.add_command(label="Quit", command=self.root.destroy)
         self.enable_menu = Menu(self.canrasp, tearoff=0)
@@ -52,6 +58,7 @@ class CANGui():
         self.menu_bar.add_command(label="_", activebackground='yellow', command=self.minimize(), font=font.Font(weight="bold"))
         self.menu_bar.add_command(label="x", activebackground='red', command=self.destroy_app, font=font.Font(weight="bold"))
         self.root.config(menu=self.menu_bar)
+
         # --- Variable Initialization
         self.brs_box = IntVar()
         self.ext_box = IntVar()
@@ -130,6 +137,7 @@ class CANGui():
         self.messages_loop_var = IntVar()
         self.active_loop_var = False
         self.stop_ran_func_var = False
+
         # --- Threads
         t1 = threading.Thread(target=self.threadfunc, daemon=True)
         t1.start()
@@ -158,7 +166,6 @@ class CANGui():
         self.thread_var = IntVar()
 
     def build(self):
-        #self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.can_frame1 = Frame(self.root, highlightbackground='grey', highlightthickness=3)
         self.can_frame1.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
@@ -223,7 +230,6 @@ class CANGui():
         self.drop_down_data_baudrate = OptionMenu(self.can_frame1, self.drop_down_data_baudrate_var, *self.data_baudrate_list)
         self.drop_down_data_baudrate.config(width=5)
         self.drop_down_data_baudrate.grid(row = 1, column=2, padx=(0,20))
-
 
         self.temp_cpu_label= Label(self.can_frame1, text= self.cpu_temp, width=15)
         self.temp_cpu_label.grid(row=3, column=1)
@@ -330,7 +336,6 @@ class CANGui():
         self.que_listbox_label.grid(row=0, column=0, sticky='w', padx=(5,0))
         self.que_listbox_label.config(font=('Helvetica bold', 13))
     
-
         self.que_listbox = Listbox(self.can_frame3, yscrollcommand = 1, width = 92, height= 15, selectmode=EXTENDED)
         self.que_listbox.grid(row=1, column=0, padx=(5,0))
         
@@ -365,10 +370,9 @@ class CANGui():
         self.mux_label.grid(row=5, column=0, padx=(22,0), pady=(5,0), sticky='w')
         
         # frame 5
-        self.can0_ckBox = Checkbutton(self.can_frame5, variable = self.can0_ckBox_var, state='disable')
+        self.can0_ckBox = Checkbutton(self.can_frame5, variable = self.can0_ckBox_var, command=self.mux_control)
         self.can0_ckBox.grid(row=1, column=0, padx=(15,0))
         self.can0_ckBox.select()
-        self.can0_ckBox.config(command=self.mux_control())
 
         self.can0_label = Label(self.can_frame5, text='CAN 0')
         self.can0_label.grid(row=2, column=0, padx=(15,0))
@@ -491,12 +495,19 @@ class CANGui():
         
         # frame 12
         try:
-            self.image_dimenion = PhotoImage(file="/home/raspberry/CAN-Tester-MultiChannel/images/Continental-Logo.png")
+            user_name = subprocess.check_output(["whoami"])
+            x = str(user_name, encoding='utf-8').strip()
+            self.image_file = f"/home/{x}/CAN-Tester-MultiChannel/images/Continental-Logo.png"
+            print(self.image_file)
+            if not os.path.exists(self.image_file):
+                print("Error: The file does not exist. ")
+            self.image_dimenion = PhotoImage(file=self.image_file)
             continental_logo_width, continental_logo_height = self.image_dimenion.width(), self.image_dimenion.height()
-            self.imagee = Image.open(r"/home/raspberry/CAN-Tester-MultiChannel/images/Continental-Logo.png").resize((continental_logo_width+130, continental_logo_height+30), Image.ANTIALIAS)
-            self.imagee = ImageTk.PhotoImage(self.imagee)
-            self.label1 = Label(self.empty_can_frame1, image= self.imagee)
-            self.label1.grid(row=0, column=0)
+            image_path = f"/home/{x}/CAN-Tester/images/Continental-Logo.png"
+            self.imagee = Image.open(image_path).resize((continental_logo_width+130, continental_logo_height+30), Image.ANTIALIAS)
+            self.imageee = ImageTk.PhotoImage(self.imagee)
+            self.label1 = Label(self.empty_can_frame1, image= self.imageee)
+            self.label1.grid(row=0, column=1)
         except:
             self.label1 = Label(self.empty_can_frame1, text= 'Missing Continental Logo Image\nPlease contact developer,git\nbelow you can find e-mail address')
             self.label1.grid(row=0, column=0, padx=50, pady=(50,0))
@@ -555,73 +566,124 @@ class CANGui():
 
     def bus_thread(self):
         if self.thread_var.get() == 1:
-            #self.test_listbox.bindtags((self.test_listbox, self.can_frame6, 'all'))
             self.start_thread_btn.config(state='normal')
-            test_thread = threading.Thread(target=self.thread_1, daemon=True)
-            test_thread.start()
-            #test_thread = threading.Thread(target=self.thread_1_2, daemon=True)
-            #test_thread.start()
-            test_mode = self.see_only_dropdown_var.get()
+            if self.get_mode_option() == 1:
+                test_thread = threading.Thread(target=self.thread_1, daemon=True)
+                test_thread.start()
+            if self.get_mode_option() == 2:
+                test_thread = threading.Thread(target=self.thread_2, daemon=True)
+                test_thread.start()
         else:
             self.start_thread_btn.config(state='disabled')
 
     def thread_1(self):
         index = self.can_bus_listbox.size()
-        str_1 = str(index) + ' messages already sent'
-        output_list = [str_1, 'This messages will not be verified']
+        str_1 = str(self.can_bus_listbox.size()) + ' messages already sent'
+        output_list = ["Master mode" ,str_1, 'This messages will not be verified']
+        self.info_listbox.delete(0, 'end')
         self.info_listbox.insert(0, output_list[0])
-        time.sleep(0.2)
         self.info_listbox.insert(1, output_list[1])
+        self.info_listbox.insert(2, output_list[2])
+        self.module_sender.set_message_flag(0)
+        while self.thread_var.get() == 1:
+            while index != self.can_bus_listbox.size():
+                index = self.can_bus_listbox.size()
+                if index > 1: 
+                    if self.module_sender.get_message_flag() == 1 and self.module_sender.get_response() == 0: # Response
+                        self.module_sender.set_message_flag(0)
+                        self.can_bus_listbox.itemconfig(index-2, {'fg': 'green'})
+                        self.can_bus_listbox.itemconfig(index-1, {'fg': 'green'})
+                        self.module_sender.set_response(1)
+                    elif self.module_sender.get_message_flag() == 2: # Error
+                        self.module_sender.set_message_flag(1)
+                        self.can_bus_listbox.itemconfig(index-2, {'fg': 'red'})
+                    else:
+                        self.module_sender.set_response(0)
+
+
+    def thread_2(self):
+        index = self.can_bus_listbox.size()
+        str_1 = str(index) + ' messages already sent'
+        output_list = ["Slave mode", str_1, 'This messages will not be verified']
+        self.info_listbox.delete(0, 'end')
+        self.info_listbox.insert(0, output_list[0])
+        self.info_listbox.insert(1, output_list[1])
+        time.sleep(0.2)
+        self.info_listbox.insert(2, output_list[2])
         df_tx_bytes = int(os.popen(f"cat /sys/class/net/can0/statistics/tx_packets").read().strip())
         df_rx_bytes = int(os.popen(f"cat /sys/class/net/can1/statistics/rx_packets").read().strip())
         red_flag = 0
         blue_flag = 0
+        ct = 0
         while self.thread_var.get() == 1:
             tx_bytes = int(os.popen(f"cat /sys/class/net/can0/statistics/tx_packets").read().strip())
             rx_bytes = int(os.popen(f"cat /sys/class/net/can1/statistics/rx_packets").read().strip())
             print('tx = ', tx_bytes, ' rx=', rx_bytes, ' df_tx =', df_tx_bytes, 'df_rx =', df_rx_bytes)
-            time.sleep(0.5)
             if tx_bytes != df_tx_bytes or rx_bytes != df_rx_bytes:
-                print('Message was sent')
-                self.info_listbox.insert(0, tx_bytes)
-                self.info_listbox.insert(1, rx_bytes)
-                if self.can_bus_listbox.size() > index:
-                    print('Listbox incremented')
-                    index = self.can_bus_listbox.size()
-                    print('tx diff= ', tx_bytes - df_tx_bytes, ' rx diff= ', rx_bytes - df_rx_bytes, ' index= ', index)
-                    if tx_bytes - df_tx_bytes == rx_bytes - df_rx_bytes and blue_flag != 1:
-                        print('First case')
-                        self.info_listbox.insert(3, 'I sent a message')
+                ct = 0
+                print('New message on bus')
+                self.info_listbox.insert('end', tx_bytes)
+                self.info_listbox.insert('end', rx_bytes)
+                while self.can_bus_listbox.size() <= index:
+                    if self.can_bus_listbox.size() == 0 or self.can_bus_listbox.size() == 1:
                         index = self.can_bus_listbox.size()
-                        #self.module_sender.set_messages(0)
-                        red_flag = 1
-                        self.info_listbox.insert(4, str(red_flag))
-                    else:
-                        print('Second case')
-                        self.info_listbox.insert(3, 'I received a message')
-                        if red_flag == 0:
-                            os.popen(f"cansend can0 123#112233", 'w', 128)
-                            #blue_flag = 1
-                        else:
-                            red_flag = 0
-                        tx_bytes = int(os.popen(f"cat /sys/class/net/can0/statistics/tx_packets").read().strip())
-                        rx_bytes = int(os.popen(f"cat /sys/class/net/can1/statistics/rx_packets").read().strip())
-                        df_tx_bytes = tx_bytes 
-                        df_rx_bytes = rx_bytes
-                        index = self.can_bus_listbox.size()
-                        self.info_listbox.insert(4, str(red_flag))
-                    
-                else:
-                    print('ERROR')
-                    index = 0
-
-    def thread_1_2(self):
-        while self.thread_var.get() == 1:
-            if self.module_sender.get_message_flag() == 1:
-                self.test_listbox.insert('end', 'I sent a message')
+                        break
+                    ct+=1
+                    if ct == 10000:
+                        print("ERROR!!!!")
+                        break
+                    print('ct->', ct)
                 index = self.can_bus_listbox.size()
-                self.module_sender.set_message_flag(0)
-         
+                print('tx diff= ', tx_bytes - df_tx_bytes, ' rx diff= ', rx_bytes - df_rx_bytes, ' index= ', index)
+                if tx_bytes - df_tx_bytes == rx_bytes - df_rx_bytes and blue_flag == 0 and red_flag == 0:
+                    print('First case')  
+                    self.info_listbox.insert('end', 'I sent a message')
+                    index = self.can_bus_listbox.size()
+                    red_flag = 1
+                    self.info_listbox.insert('end', str(red_flag))
+                elif tx_bytes - df_tx_bytes != rx_bytes - df_rx_bytes:
+                    print('Second case')
+                    print('red', red_flag)
+                    self.info_listbox.insert('end', 'I received a message')
+                    if red_flag == 0 and blue_flag == 0:
+                        os.popen(f"cansend can0 123#11223344", 'w', 128)
+                        print('tx = ', tx_bytes, ' rx=', rx_bytes, ' df_tx =', df_tx_bytes, 'df_rx =', df_rx_bytes)
+                        df_tx_bytes = tx_bytes
+                        df_rx_bytes = rx_bytes
+                        print("Update?",'tx = ', tx_bytes, ' rx=', rx_bytes, ' df_tx =', df_tx_bytes, 'df_rx =', df_rx_bytes)
+                        blue_flag = 1
+                    elif blue_flag == 1:
+                        print("blue_flag")
+                    elif red_flag == 1:
+                        red_flag = 0
+                        self.can_bus_listbox.itemconfig(index-2, {'fg': 'green'})
+                        self.can_bus_listbox.itemconfig(index-1, {'fg': 'green'})
+                elif tx_bytes - df_tx_bytes == rx_bytes - df_rx_bytes and blue_flag == 0 and red_flag == 1:
+                    index = self.can_bus_listbox.size()
+                    self.can_bus_listbox.itemconfig(index-2, {'fg': 'red'})
+                    print('Third case')
+                    self.info_listbox.insert('end', 'I sent a message')
+                elif tx_bytes - df_tx_bytes == rx_bytes - df_rx_bytes and blue_flag == 1 and red_flag == 0:
+                    index = self.can_bus_listbox.size()
+                    self.can_bus_listbox.itemconfig(index-2, {'fg': 'green'})
+                    self.can_bus_listbox.itemconfig(index-1, {'fg': 'green'})
+                    print('Fourth case')
+                    self.info_listbox.insert('end', 'Cycle completed')
+                    blue_flag = 0
+                df_tx_bytes = tx_bytes 
+                df_rx_bytes = rx_bytes
+
+    def set_mode_option(self, var_option: int):
+        self.device_mode=var_option
+        if self.device_mode == 1:
+            self.master_var.set(1)
+            self.slave_var.set(0)
+        else:
+            self.slave_var.set(1)
+            self.master_var.set(0)
+
+    def get_mode_option(self):
+        return self.device_mode
 
     def stop_ran_func(self):
         self.stop_ran_func_var = True
@@ -775,10 +837,10 @@ class CANGui():
         self.info_listbox_testmode()
 
     def open_git_url(self):
-        webbrowser.open("https://github.com/timoothee/CAN-Tester-MultiChannel")
+        webbrowser.open("https://github.com/timoothee/CAN-Tester")
 
     def open_release_url(self):
-        webbrowser.open("https://github.com/timoothee/CAN-Tester-MultiChannel/releases")      
+        webbrowser.open("https://github.com/timoothee/CAN-Tester/releases")      
         
     def sensor_temp(self):
         slash_list = ['|','/','-','\\']
@@ -833,7 +895,7 @@ class CANGui():
         self.welcome_fr2 = Frame(self.welcome_root)
         self.welcome_fr2.grid(row=1, column=0)
         self.welcome_root.geometry("800x550")
-        self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/one.png')
+        self.image = Image.open('/home/raspberry/CAN-Tester/images/welcome/one.png')
         imagee = self.image.resize((800, 500), Image.ANTIALIAS)
         new_imagee = ImageTk.PhotoImage(imagee)
         self.label1 = Label(self.welcome_root, image= new_imagee)
@@ -847,7 +909,7 @@ class CANGui():
     def case_scenario(self):
         self.case += 1
         if self.case == 10:
-            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/one.png')
+            self.image = Image.open('/home/raspberry/CAN-Tester/images/welcome/one.png')
             imagee = self.image.resize((800, 500), Image.ANTIALIAS)
             new_imagee = ImageTk.PhotoImage(imagee)
             self.label1 = Label(self.welcome_root, image= new_imagee)
@@ -855,7 +917,7 @@ class CANGui():
             self.label1.grid(row=0, column=0)
             self.welcome_root.geometry("800x550")
         if self.case == 2:
-            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/two.png')
+            self.image = Image.open('/home/raspberry/CAN-Tester/images/welcome/two.png')
             imagee = self.image.resize((800, 500), Image.ANTIALIAS)
             new_imagee = ImageTk.PhotoImage(imagee)
             self.label1 = Label(self.welcome_root, image= new_imagee)
@@ -863,14 +925,14 @@ class CANGui():
             self.label1.grid(row=0, column=0)
             
         if self.case == 3:
-            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/three.png')
+            self.image = Image.open('/home/raspberry/CAN-Tester/images/welcome/three.png')
             imagee = self.image.resize((800, 500), Image.ANTIALIAS)
             new_imagee = ImageTk.PhotoImage(imagee)
             self.label1 = Label(self.welcome_root, image= new_imagee)
             self.label_image=new_imagee
             self.label1.grid(row=0, column=0)
         if self.case == 4:
-            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/four.png')
+            self.image = Image.open('/home/raspberry/CAN-Tester/images/welcome/four.png')
             imagee = self.image.resize((800, 500), Image.ANTIALIAS)
             new_imagee = ImageTk.PhotoImage(imagee)
             self.label1 = Label(self.welcome_root, image= new_imagee)
@@ -878,7 +940,7 @@ class CANGui():
             self.label1.grid(row=0, column=0)
             
         if self.case == 5:
-            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/five.png')
+            self.image = Image.open('/home/raspberry/CAN-Tester/images/welcome/five.png')
             imagee = self.image.resize((800, 500), Image.ANTIALIAS)
             new_imagee = ImageTk.PhotoImage(imagee)
             self.label1 = Label(self.welcome_root, image= new_imagee)
@@ -886,7 +948,7 @@ class CANGui():
             self.label1.grid(row=0, column=0)
             
         if self.case == 6:
-            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/six.png')
+            self.image = Image.open('/home/raspberry/CAN-Tester/images/welcome/six.png')
             imagee = self.image.resize((800, 500), Image.ANTIALIAS)
             new_imagee = ImageTk.PhotoImage(imagee)
             self.label1 = Label(self.welcome_root, image= new_imagee)
@@ -894,7 +956,7 @@ class CANGui():
             self.label1.grid(row=0, column=0)
             
         if self.case == 7:
-            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/seven.png')
+            self.image = Image.open('/home/raspberry/CAN-Tester/images/welcome/seven.png')
             imagee = self.image.resize((800, 500), Image.ANTIALIAS)
             new_imagee = ImageTk.PhotoImage(imagee)
             self.label1 = Label(self.welcome_root, image= new_imagee)
@@ -930,14 +992,11 @@ class CANGui():
         
         self.label = Label(self.can_frame7, text='Powered by: ICSolution', font='Helvetica 11 bold')
         self.label.grid(row=2, column=0, sticky='w', padx=(20,0), pady=(30,0))
-        self.imagee = Image.open(r"/home/raspberry/CAN-Tester-MultiChannel/images/Continental-Logo.png").resize((self.continental_logo_width, self.continental_logo_height), Image.ANTIALIAS)
+        self.imagee = Image.open(r"/home/raspberry/CAN-Tester/images/Continental-Logo.png").resize((self.continental_logo_width, self.continental_logo_height), Image.ANTIALIAS)
         self.imagee = ImageTk.PhotoImage(self.imagee)
-        self.label1 = Label(self.can_frame7, image= self.imagee)
-        self.label1.grid(row=2, column=1, padx=(10,0))
-        #self.label2 = Label(self.can_frame8, text='timotei.sandru@continental-corporation.com', font='Helvetica 11 bold')
-        #self.label2.grid(row=3, column=0, sticky='e')
+        self.label1 = Label(self.can_frame7, image= self.imagee, highlightbackground='blue', highlightthickness=5)
+        self.label1.grid(row=2, column=2, padx=(100,0))
         
-    
     def horizontal_view(self):
         self.root.geometry("{0}x{1}+0+0".format(self.root.winfo_screenwidth(), self.root.winfo_screenheight()))
         self.can_frame1.grid(row=0, column=0, sticky="nsew")
@@ -951,7 +1010,6 @@ class CANGui():
         self.can_frame2.grid(row=1, column=0, pady=15, sticky="nsew")
         self.can_frame3.grid(row=2, column=0, sticky="nsew")
         self.can_frame4.grid(row=3, column=0, sticky="nsew")
-        #self.empty_can_frame1.grid(row=1, column=1)
         self.can_frame5.grid(row=2, column=1, sticky="nsew")
         self.can_frame6.grid(row=3, column=1, sticky="nsew")
         self.can_frame7.grid(row=4, column=0, sticky="nsew", pady=(30))
@@ -969,7 +1027,7 @@ class CANGui():
         self.can_frame11.grid_forget()
         self.label.grid_forget()
         self.label1.grid_forget()
-        self.imagee = Image.open(r"/home/raspberry/CAN-Tester-MultiChannel/images/Continental-Logo.png").resize((self.continental_logo_width+130, self.continental_logo_height+30), Image.ANTIALIAS)
+        self.imagee = Image.open(r"/home/raspberry/CAN-Tester/images/Continental-Logo.png").resize((self.continental_logo_width+130, self.continental_logo_height+30), Image.ANTIALIAS)
         self.imagee = ImageTk.PhotoImage(self.imagee)
         self.label1 = Label(self.can_frame12, image= self.imagee)
         self.label1.grid(row=0, column=0, padx=10, pady=(50,0))
@@ -982,12 +1040,11 @@ class CANGui():
         self.label.grid(row=0, column=0, padx=(10,0),pady=(self.powered_offsety,0))
         self.label2 = Label(self.can_frame11, text='timotei.sandru@continental-corporation.com', font='Helvetica 11 bold')
         self.label2.grid(row=0, column=0, padx =10 , pady=(self.mail_offsety,0), sticky='e')
-        
+
     def que_loop(self):
         time.sleep(10)
         while True:
             while self.que_loop_var.get() == 1 and self.active_loop_var == True:
-                time.sleep(1)
                 for item in self.mux_list:
                     if item.get() == 1:
                         self.set_mux_sel(self.mux_list.index(item))
@@ -996,8 +1053,6 @@ class CANGui():
                         for i in range(len(self.frame.id_list)):
                             self.module_sender.send_q(str(self.frame.id_list[i]), str(self.frame.brs_list[i]), str(self.frame.payload_list[i]), str(self.frame.fd_list[i]), self.mux_list.index(item))
                         self.module_sender.default_led(self.mux_list.index(item))                
-                #for item in list(self.que_listbox.get(0, 'end')):
-                    #self.module_sender.random_message(str(item[10:]), 4)
                 if self.que_loop_var.get() != 1:
                     self.active_loop_var = False
 
@@ -1073,7 +1128,7 @@ class CANGui():
                         for i in range(random.randrange(1,11,2)+1):
                             random_message = random_message + random.choice(bits_list)
 
-                        self.module_sender.random_message(random_message, self.mux_list.index(item))
+                        self.module_sender.random_message(random_message, self.mux_list.index(item)) # Module sender function
                         time.sleep(self.delay_entry_var.get()/1000)
                 self.module_sender.default_led(self.mux_list.index(item))
             elif self.default_status_label.cget("text") != "UP":
@@ -1090,7 +1145,8 @@ class CANGui():
         if self.root_dev is None or not self.root_dev.winfo_exists():
             self.refresh_time()
             status_message = self.current_time + " " + message
-            with open('../logs/status.txt', 'a+') as f:
+            self.gpath = self.module_sender.get_rasp_path() + "status.txt"
+            with open(self.gpath, 'a+') as f:
                 f.write(status_message+'\n')
         else:
             self.refresh_time()
@@ -1167,7 +1223,6 @@ class CANGui():
         self.drop_down_id_baudrate.config(state='normal')
         self.data_baudrate_Label.config(state='normal')
         self.drop_down_data_baudrate.config(state='normal')
-        #self.sample_point_entry.config(state='normal')  # needs functionality
         self.dsample_point_entry.config(state='normal')
         time.sleep(1)
 
@@ -1215,7 +1270,6 @@ class CANGui():
         else:
             listbox.delete(0, END)
 
-
     def threadfunc(self):
         while True:
             with open(self.module_sender.get_rasp_path()+'can.log', 'r') as f:
@@ -1238,7 +1292,6 @@ class CANGui():
         else:
             self.refresh_time()
             self.get_frame_data()
-            
             self.que_listbox.delete(self.our_item)
             self.que_listbox.insert(self.our_item, self.string_max)
             self.que_listbox.itemconfig(self.our_item, {'fg': 'green'})
@@ -1279,7 +1332,6 @@ class CANGui():
         import tkinter.filedialog as fd
         self.ask_textfile_tk = Tk()
         self.ask_textfile_tk.withdraw()
-
         self.currdir = os.getcwd()
         self.path = fd.askopenfilename(parent= self.ask_textfile_tk, initialdir= self.currdir, title= "Please select a file")
         if not self.path:
@@ -1327,7 +1379,6 @@ class CANGui():
         self.debugging("... checking if the fields are completed correctly", 0)
         self.check_all_fields_retVal = False
         self.zero_size = 0
-
         if self.RTR_box.get() == 1:
             if self.check_all_fields_completed_retVal == False:
                 pass
@@ -1404,7 +1455,6 @@ class CANGui():
                 self.info_listbox.itemconfig(END, {'fg': 'red'})
                 self.payload_Entry.config(fg= 'red')
                 
-
     def refresh_time(self):
         self.t = time.localtime()
         self.current_time = time.strftime("%H:%M:%S", self.t)
@@ -1432,7 +1482,6 @@ class CANGui():
                 self.string_max = self.current_time + "  " + zero_var +str(self.frame_id_entry.get()) + "#" + str(self.payload_entry.get())
                 self.position += 1
 
-
     def save(self, mode):
         first_one = False
         self.debugging(".. saving data to file", 0)
@@ -1458,8 +1507,6 @@ class CANGui():
                     file.close()
             else:
                 messagebox.showerror("Status", "List is empty")
-            
-
         else:
             self.debugging("output mode", 0)
             if self.can_bus_listbox.size() != 0:
@@ -1592,7 +1639,6 @@ class CANGui():
             if chkb == 0:
                 self.info_listbox.insert(END,"INFO: No checkbox selected")
                 self.info_listbox.itemconfig(END, {'fg': '#ffd700'})
-
         else:
             self.initial_interface_state()
             self.info_listbox.insert(END,"Error: CAN is DOWN")
@@ -1603,11 +1649,9 @@ class SplashScreen:
     def __init__(self, parent):
         self.parent = parent
 
-        self.logo_image = Image.open(r"/home/raspberry/CAN-Tester-MultiChannel/images/photo.png").resize((500, 250), Image.ANTIALIAS)
+        self.logo_image = Image.open(r"/home/raspberry/CAN-Tester/images/photo.png").resize((500, 250), Image.ANTIALIAS)
         self.logo_animation = ImageTk.PhotoImage(self.logo_image)
-
         self.parent.overrideredirect(True)
-
         screen_width = self.parent.winfo_screenwidth()
         screen_height = self.parent.winfo_screenheight()
         logo_width = self.logo_animation.width()
@@ -1642,4 +1686,3 @@ class SplashScreen:
     def destroy(self):
         self.parent.overrideredirect(False)
         self.parent.destroy()
-
