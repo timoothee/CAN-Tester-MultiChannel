@@ -2,6 +2,19 @@ from lib import *
 
 class CANGui():
     def __init__(self, gui_revision: str):
+        os_path = "grep '^ID=' /etc/os-release | cut -d'=' -f2"
+        self.model_name = str((os.popen(os_path, 'r', 128)).read()).strip()
+
+        if self.model_name == "poky":
+            self.gpath = "/opt/CANTester/"
+        elif self.model_name == "Raspbian" or self.model_name == "debian":
+            cmd= "pwd"
+            self.gpath = str((os.popen(cmd, 'r', 128)).read())
+            self.gpath = f"{(self.gpath).strip()}/CAN-Tester-MultiChannel/"
+        else:
+            self.gpath="unknow"
+ 
+        print("gpath", self.gpath)
         fade.leds_init()
         self.splash()
         self.gui_revision = gui_revision
@@ -18,7 +31,7 @@ class CANGui():
         self.blankenu = Menu(self.menu_bar, tearoff=0)
         self.canrasp = Menu(self.menu_bar, tearoff=0)
 
-        self.ico = PhotoImage(file="/home/raspberry/CAN-Tester/images/button.png")
+        self.ico = PhotoImage(file="/home/pi/CAN-Tester-MultiChannel/images/button.png")
         self.master_var = IntVar(self.root)
         self.master_var.set(1)
         self.device_mode = 1
@@ -100,10 +113,10 @@ class CANGui():
             self.can_send_module_optionmenu = tuple(psutil.net_if_addrs())[1:4]
             self.can_receive_module_optionmenu = tuple(psutil.net_if_addrs())[1:4]
             self.can_dict = {'anpi0':"anpi0", 'anpi1':"anpi1", 'en0':"en0"}
-        elif platform.system() == "Linux":
-            self.can_send_module_optionmenu = tuple(filter(lambda item: item[:3] == 'can', os.listdir('/sys/class/net/')))
-            self.can_receive_module_optionmenu = tuple(filter(lambda item: item[:3] == 'can', os.listdir('/sys/class/net/')))
-            self.can_dict = {'CAN0':"can0", 'CAN1':"can1", 'CAN2':"can2"}
+        #elif platform.system() == "Linux":
+        #    self.can_send_module_optionmenu = tuple(filter(lambda item: item[:3] == 'can', os.listdir('/sys/class/net/')))
+        #    self.can_receive_module_optionmenu = tuple(filter(lambda item: item[:3] == 'can', os.listdir('/sys/class/net/')))
+        #    self.can_dict = {'CAN0':"can0", 'CAN1':"can1", 'CAN2':"can2"}
         else:
             self.can_send_module_optionmenu = ("CAN0", "CAN1")
             self.can_receive_module_optionmenu = ("CAN0","CAN1")
@@ -123,9 +136,9 @@ class CANGui():
         self.list_read = []
         self.list_mem = []
         self.thread_error = False
-        with open(self.module_sender.get_rasp_path()+'can.log', 'w') as f:
+        with open(self.module_sender.get_rasp_path()+'/can.log', 'w') as f:
                 pass
-        with open(self.module_sender.get_rasp_path()+'status.txt', 'w') as f:
+        with open(self.module_sender.get_rasp_path()+'/status.txt', 'w') as f:
                 pass
         self.cpu_temp = '0'
         self.dmessage = StringVar()
@@ -495,15 +508,10 @@ class CANGui():
         
         # frame 12
         try:
-            user_name = subprocess.check_output(["whoami"])
-            x = str(user_name, encoding='utf-8').strip()
-            self.image_file = f"/home/{x}/CAN-Tester-MultiChannel/images/Continental-Logo.png"
-            print(self.image_file)
-            if not os.path.exists(self.image_file):
-                print("Error: The file does not exist. ")
+            self.image_file = f"{self.gpath}images/Continental-Logo.png"
             self.image_dimenion = PhotoImage(file=self.image_file)
             self.continental_logo_width, self.continental_logo_height = self.image_dimenion.width(), self.image_dimenion.height()
-            image_path = f"/home/{x}/CAN-Tester/images/Continental-Logo.png"
+            image_path = f"{self.gpath}images/Continental-Logo.png"
             self.imagee = Image.open(image_path).resize((self.continental_logo_width+130, self.continental_logo_height+30), Image.ANTIALIAS)
             self.imageee = ImageTk.PhotoImage(self.imagee)
             self.label1 = Label(self.empty_can_frame1, image= self.imageee)
@@ -895,7 +903,8 @@ class CANGui():
         self.welcome_fr2 = Frame(self.welcome_root)
         self.welcome_fr2.grid(row=1, column=0)
         self.welcome_root.geometry("800x550")
-        self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/one.png')
+        img = f"{self.gpath}images/welcome/one.png"
+        self.image = Image.open(img)
         imagee = self.image.resize((800, 500), Image.ANTIALIAS)
         new_imagee = ImageTk.PhotoImage(imagee)
         self.label1 = Label(self.welcome_root, image= new_imagee)
@@ -908,62 +917,19 @@ class CANGui():
 
     def case_scenario(self):
         self.case += 1
-        if self.case == 10:
-            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/one.png')
+
+        photo_list = ['one', 'two', 'three', 'four', 'five', 'six', 'seven']
+        if self.case <= 8:
+            photo_path = f"{self.gpath}images/welcome/{photo_list[self.case]}.png"
+
+            self.image = Image.open(photo_path)
             imagee = self.image.resize((800, 500), Image.ANTIALIAS)
             new_imagee = ImageTk.PhotoImage(imagee)
             self.label1 = Label(self.welcome_root, image= new_imagee)
             self.label_image=new_imagee
             self.label1.grid(row=0, column=0)
             self.welcome_root.geometry("800x550")
-        if self.case == 2:
-            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/two.png')
-            imagee = self.image.resize((800, 500), Image.ANTIALIAS)
-            new_imagee = ImageTk.PhotoImage(imagee)
-            self.label1 = Label(self.welcome_root, image= new_imagee)
-            self.label_image=new_imagee
-            self.label1.grid(row=0, column=0)
-            
-        if self.case == 3:
-            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/three.png')
-            imagee = self.image.resize((800, 500), Image.ANTIALIAS)
-            new_imagee = ImageTk.PhotoImage(imagee)
-            self.label1 = Label(self.welcome_root, image= new_imagee)
-            self.label_image=new_imagee
-            self.label1.grid(row=0, column=0)
-        if self.case == 4:
-            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/four.png')
-            imagee = self.image.resize((800, 500), Image.ANTIALIAS)
-            new_imagee = ImageTk.PhotoImage(imagee)
-            self.label1 = Label(self.welcome_root, image= new_imagee)
-            self.label_image=new_imagee
-            self.label1.grid(row=0, column=0)
-            
-        if self.case == 5:
-            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/five.png')
-            imagee = self.image.resize((800, 500), Image.ANTIALIAS)
-            new_imagee = ImageTk.PhotoImage(imagee)
-            self.label1 = Label(self.welcome_root, image= new_imagee)
-            self.label_image=new_imagee
-            self.label1.grid(row=0, column=0)
-            
-        if self.case == 6:
-            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/six.png')
-            imagee = self.image.resize((800, 500), Image.ANTIALIAS)
-            new_imagee = ImageTk.PhotoImage(imagee)
-            self.label1 = Label(self.welcome_root, image= new_imagee)
-            self.label_image=new_imagee
-            self.label1.grid(row=0, column=0)
-            
-        if self.case == 7:
-            self.image = Image.open('/home/raspberry/CAN-Tester-MultiChannel/images/welcome/seven.png')
-            imagee = self.image.resize((800, 500), Image.ANTIALIAS)
-            new_imagee = ImageTk.PhotoImage(imagee)
-            self.label1 = Label(self.welcome_root, image= new_imagee)
-            self.label_image=new_imagee
-            self.label1.grid(row=0, column=0)
-           
-            self.next_button.config(text='Close')
+       
         if self.case == 8:
             self.welcome_root.destroy()
 
@@ -991,7 +957,7 @@ class CANGui():
         
         #self.label = Label(self.can_frame7, text='Powered by: ICSolution', font='Helvetica 11 bold')
         #self.label.grid(row=2, column=0, sticky='w', padx=(20,0), pady=(30,0))
-        self.imagee = Image.open(r"/home/raspberry/CAN-Tester-MultiChannel/images/Continental-Logo.png").resize((self.continental_logo_width, self.continental_logo_height), Image.ANTIALIAS)
+        self.imagee = Image.open(r"/home/pi/CAN-Tester-MultiChannel/images/Continental-Logo.png").resize((self.continental_logo_width, self.continental_logo_height), Image.ANTIALIAS)
         self.imagee = ImageTk.PhotoImage(self.imagee)
         #self.label1 = Label(self.can_frame7, image= self.imagee, highlightbackground='blue', highlightthickness=5)
         #self.label1.grid(row=2, column=2, padx=(100,0))
@@ -1023,7 +989,7 @@ class CANGui():
         #self.can_frame11.grid_forget()
         #self.label.grid_forget()
         #self.label1.grid_forget()
-        self.imagee = Image.open(r"/home/raspberry/CAN-Tester-MultiChannel/images/Continental-Logo.png").resize((self.continental_logo_width+130, self.continental_logo_height+30), Image.ANTIALIAS)
+        self.imagee = Image.open(r"/home/pi/CAN-Tester-MultiChannel/images/Continental-Logo.png").resize((self.continental_logo_width+130, self.continental_logo_height+30), Image.ANTIALIAS)
         self.imagee = ImageTk.PhotoImage(self.imagee)
         #self.label1 = Label(self.can_frame12, image= self.imagee)
         #self.label1.grid(row=0, column=0, padx=10, pady=(50,0))
@@ -1054,7 +1020,7 @@ class CANGui():
 
     def splash(self):
         root = Tk()
-        splash = SplashScreen(root)
+        splash = SplashScreen(root, self.gpath)
         for i in range(200):
             if i % 10 == 0:
                 splash.config_splash()
@@ -1141,9 +1107,9 @@ class CANGui():
         if self.root_dev is None or not self.root_dev.winfo_exists():
             self.refresh_time()
             status_message = self.current_time + " " + message
-            self.gpath = self.module_sender.get_rasp_path() + "status.txt"
-            with open(self.gpath, 'a+') as f:
-                f.write(status_message+'\n')
+            #self.gpath = self.module_sender.get_rasp_path() + "status.txt"
+            #with open(self.gpath, 'a+') as f:
+            #    f.write(status_message+'\n')
         else:
             self.refresh_time()
             status_message = self.current_time + " " + message
@@ -1642,10 +1608,11 @@ class CANGui():
 
 
 class SplashScreen:
-    def __init__(self, parent):
+    def __init__(self, parent, gPath):
         self.parent = parent
 
-        self.logo_image = Image.open(r"/home/raspberry/CAN-Tester-MultiChannel/images/photo.png").resize((500, 250), Image.ANTIALIAS)
+        img = f"{gPath}images/photo.png"
+        self.logo_image = Image.open(img).resize((500, 250), Image.ANTIALIAS)
         self.logo_animation = ImageTk.PhotoImage(self.logo_image)
         self.parent.overrideredirect(True)
         screen_width = self.parent.winfo_screenwidth()
