@@ -77,6 +77,7 @@ class CANGui():
         self.ext_box = IntVar()
         self.RTR_box = IntVar()
         self.FD_box = IntVar()
+        self.infi_var = IntVar()
         self.que_loop_var = IntVar()
         self.id_text = StringVar()
         self.payload_entry = StringVar()
@@ -113,10 +114,10 @@ class CANGui():
             self.can_send_module_optionmenu = tuple(psutil.net_if_addrs())[1:4]
             self.can_receive_module_optionmenu = tuple(psutil.net_if_addrs())[1:4]
             self.can_dict = {'anpi0':"anpi0", 'anpi1':"anpi1", 'en0':"en0"}
-        #elif platform.system() == "Linux":
-        #    self.can_send_module_optionmenu = tuple(filter(lambda item: item[:3] == 'can', os.listdir('/sys/class/net/')))
-        #    self.can_receive_module_optionmenu = tuple(filter(lambda item: item[:3] == 'can', os.listdir('/sys/class/net/')))
-        #    self.can_dict = {'CAN0':"can0", 'CAN1':"can1", 'CAN2':"can2"}
+        elif platform.system() == "Linux":
+            self.can_send_module_optionmenu = tuple(filter(lambda item: item[:3] == 'can', os.listdir('/sys/class/net/')))
+            self.can_receive_module_optionmenu = tuple(filter(lambda item: item[:3] == 'can', os.listdir('/sys/class/net/')))
+            self.can_dict = {'CAN0':"can0", 'CAN1':"can1", 'CAN2':"can2"}
         else:
             self.can_send_module_optionmenu = ("CAN0", "CAN1")
             self.can_receive_module_optionmenu = ("CAN0","CAN1")
@@ -136,9 +137,9 @@ class CANGui():
         self.list_read = []
         self.list_mem = []
         self.thread_error = False
-        with open(self.module_sender.get_rasp_path()+'/can.log', 'w') as f:
+        with open(self.module_sender.get_rasp_path()+'can.log', 'w') as f:
                 pass
-        with open(self.module_sender.get_rasp_path()+'/status.txt', 'w') as f:
+        with open(self.module_sender.get_rasp_path()+'status.txt', 'w') as f:
                 pass
         self.cpu_temp = '0'
         self.dmessage = StringVar()
@@ -495,6 +496,12 @@ class CANGui():
 
         self.loop_stop_button = Button(self.can_frame8_2, text="STOP", width=5, command=self.stop_ran_func)
         self.loop_stop_button.grid(row=3, column=0, padx=(0,25), sticky='e')
+
+        self.infi_loop = Label(self.can_frame8_2, text="Infinite Loop")
+        self.infi_loop.grid(row=4, column=0, padx=(25,0), sticky='w')
+
+        self.infi_chkbtn = Checkbutton(self.can_frame8_2, variable=self.infi_var)
+        self.infi_chkbtn.grid(row=4, column=0, padx=(25,0))
 
         self.emp = Label(self.can_frame8_2, text='  ')
         self.emp.grid(row=0, column=1)
@@ -1038,12 +1045,16 @@ class CANGui():
 
         if isinstance(self.delay_entry_var.get(), int) == False:
             self.delay_entry_wrong = True
-        if isinstance(self.messages_loop_var.get(), int) == False:
-            self.messages_entry_wrong = True
-        if self.delay_entry_var.get() == 0 and self.delay_entry_wrong == False:
-            self.delay_entry_incomplete = True
-        if self.messages_loop_var.get() == 0 and self.messages_entry_wrong == False:
-            self.messages_entry_incomplete = True
+        if self.infi_var.get() == 1:
+            if self.delay_entry_var.get() == 0 and self.delay_entry_wrong == False:
+                self.delay_entry_incomplete = True
+        else:
+            if isinstance(self.messages_loop_var.get(), int) == False:
+                self.messages_entry_wrong = True
+            if self.delay_entry_var.get() == 0 and self.delay_entry_wrong == False:
+                self.delay_entry_incomplete = True
+            if self.messages_loop_var.get() == 0 and self.messages_entry_wrong == False:
+                self.messages_entry_incomplete = True
 
     def random_loop_error_list(self):
         if self.delay_entry_incomplete == True:
@@ -1073,8 +1084,8 @@ class CANGui():
     def ranfun(self):
         for item in self.mux_list:
             if self.default_status_label.cget("text") == "UP" and item.get() == 1:
-                for i in range(self.messages_loop_var.get()):
-                    if self.stop_ran_func_var != True:
+                if self.infi_var.get() == 1:
+                    while self.stop_ran_func_var != True:
                         self.set_mux_sel(self.mux_list.index(item))
                         random_message = ""
                         bits_list = ['1','2','3','4','5','6','7','8','9','A','B','C','D','E','F']
@@ -1092,6 +1103,27 @@ class CANGui():
 
                         self.module_sender.random_message(random_message, self.mux_list.index(item)) # Module sender function
                         time.sleep(self.delay_entry_var.get()/1000)
+
+                else:
+                    for i in range(self.messages_loop_var.get()):
+                        if self.stop_ran_func_var != True:
+                            self.set_mux_sel(self.mux_list.index(item))
+                            random_message = ""
+                            bits_list = ['1','2','3','4','5','6','7','8','9','A','B','C','D','E','F']
+
+                            if random.choice(['normal', 'extended']) == "normal":
+                                random_message = random.choice(['1','2','3','4','5','6','7']) + random.choice(bits_list) + random.choice(bits_list)
+                            else:
+                                random_message = '1'
+                                for i in range(7):
+                                    random_message = random_message + random.choice(bits_list)
+                            random_message = random_message + "##" + str(random.randrange(0, 9))
+
+                            for i in range(random.randrange(1,11,2)+1):
+                                random_message = random_message + random.choice(bits_list)
+
+                            self.module_sender.random_message(random_message, self.mux_list.index(item)) # Module sender function
+                            time.sleep(self.delay_entry_var.get()/1000)
                 self.module_sender.default_led(self.mux_list.index(item))
             elif self.default_status_label.cget("text") != "UP":
                 self.info_listbox.insert(END,"Error: CAN is DOWN")
