@@ -101,27 +101,11 @@ class CANGui():
         self.text_variable_sp.set("N/A")
         self.dtext_variable_sp = StringVar()
         self.position = 0
-        self.can_send_module_optionmenu = None
-        self.can_receive_module_optionmenu = None
+        self.can_module_optionmenu = None
         self.screen_width_h = self.root.winfo_screenwidth() // 23
         self.screen_height_h = self.root.winfo_screenheight() // 65
         self.screen_width_v = self.root.winfo_screenwidth() // 25
         self.screen_height_v = self.root.winfo_screenheight() // 100
-        # ---
-
-        # --- Platform Module
-        if platform.system() == "Darwin":
-            self.can_send_module_optionmenu = tuple(psutil.net_if_addrs())[1:4]
-            self.can_receive_module_optionmenu = tuple(psutil.net_if_addrs())[1:4]
-            self.can_dict = {'anpi0':"anpi0", 'anpi1':"anpi1", 'en0':"en0"}
-        elif platform.system() == "Linux":
-            self.can_send_module_optionmenu = tuple(filter(lambda item: item[:3] == 'can', os.listdir('/sys/class/net/')))
-            self.can_receive_module_optionmenu = tuple(filter(lambda item: item[:3] == 'can', os.listdir('/sys/class/net/')))
-            self.can_dict = {'CAN0':"can0", 'CAN1':"can1", 'CAN2':"can2"}
-        else:
-            self.can_send_module_optionmenu = ("CAN0", "CAN1")
-            self.can_receive_module_optionmenu = ("CAN0","CAN1")
-            self.can_dict = {'CAN0':"can0", 'CAN1':"can1", 'CAN2':"can2"}
         # ---
 
         self.baudrate_list = ('100K','200K','400K','500K','1M')
@@ -137,9 +121,12 @@ class CANGui():
         self.list_read = []
         self.list_mem = []
         self.thread_error = False
+        self.error_current_boot = []
         with open(self.module_sender.get_rasp_path()+'can.log', 'w') as f:
                 pass
         with open(self.module_sender.get_rasp_path()+'status.txt', 'w') as f:
+                pass
+        with open(self.gpath +'logs/errors.txt', 'w') as f:
                 pass
         self.cpu_temp = '0'
         self.dmessage = StringVar()
@@ -151,6 +138,19 @@ class CANGui():
         self.messages_loop_var = IntVar()
         self.active_loop_var = False
         self.stop_ran_func_var = False
+
+         # --- Platform Module
+        if platform.system() == "Darwin":
+            self.can_module_optionmenu = tuple(psutil.net_if_addrs())[1:4]
+        elif platform.system() == "Linux":
+            self.can_module_optionmenu = tuple(filter(lambda item: item[:3] == 'can', os.listdir('/sys/class/net/')))
+            if len(self.can_module_optionmenu) == 0:
+                self.can_module_optionmenu = ("-")
+                self.error_func('c0')
+                self.can_sender_var.set('N/A')
+                self.can_receiver_var.set('N/A')
+        else:
+            self.can_module_optionmenu = ("Test can0", "Test can1")
 
         # --- Threads
         t1 = threading.Thread(target=self.threadfunc, daemon=True)
@@ -220,14 +220,14 @@ class CANGui():
         self.can_interface_sender_label = Label(self.can_frame1, text = "CAN SENDER")
         self.can_interface_sender_label.grid(row=0, column=0, pady=(20,0))
 
-        self.sender_drop_down_menu = OptionMenu(self.can_frame1, self.can_sender_var, *self.can_send_module_optionmenu)
+        self.sender_drop_down_menu = OptionMenu(self.can_frame1, self.can_sender_var, *self.can_module_optionmenu)
         self.sender_drop_down_menu.config(width=5)
         self.sender_drop_down_menu.grid(row = 1, column = 0)
 
         self.can_interface_receiver_label = Label(self.can_frame1, text = "CAN RECEIVER")
         self.can_interface_receiver_label.grid(row=2, column=0)
 
-        self.receiver_drop_down_menu = OptionMenu(self.can_frame1, self.can_receiver_var, *self.can_receive_module_optionmenu)
+        self.receiver_drop_down_menu = OptionMenu(self.can_frame1, self.can_receiver_var, *self.can_module_optionmenu)
         self.receiver_drop_down_menu.config(width=5)
         self.receiver_drop_down_menu.grid(row = 3, column = 0)
 
@@ -526,6 +526,8 @@ class CANGui():
         except:
             self.label1 = Label(self.empty_can_frame1, text= 'Missing Continental Logo Image\nPlease contact developer,git\nbelow you can find e-mail address')
             self.label1.grid(row=0, column=0, padx=50, pady=(50,0))
+        
+        self.error_interface()
 
     def build2(self):
         self.dev_can_frame_1 = Frame(self.root_dev)
@@ -740,6 +742,24 @@ class CANGui():
         self.can_frame6.config(highlightthickness=3)
         self.can_frame7.config(highlightthickness=3)
         self.can_frame8.config(highlightthickness=3)
+
+    def error_func(self, code_error):
+        code_error_list = ['c0']
+        code_error_semn = ['CAN Modules Not Found']
+        self.error_current_boot.append(code_error)
+
+        with open(self.gpath +'logs/errors.txt', 'w') as f:
+            if code_error == 'c0':
+                f.write("self.sender_drop_down_menu.config(state='disable')\n")
+                f.write("self.receiver_drop_down_menu.config(state='disable')\n")
+                f.write("self.info_listbox.insert(0, 'CAN Modules Not Found')\n")
+                f.write("self.info_listbox.itemconfig(END, {'fg': 'red'})")
+
+    def error_interface(self):
+        with open(self.gpath +'logs/errors.txt', 'r') as f:
+            self.todo_error_list = f.read().splitlines()
+        for item in self.todo_error_list:
+            exec(item)
 
     def mux_control(self):
         for item in self.mux_list:
