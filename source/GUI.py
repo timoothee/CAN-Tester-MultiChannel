@@ -19,7 +19,7 @@ class CANGui():
         self.splash()
         self.gui_revision = gui_revision
         self.root = Tk()
-        self.root.wm_attributes('-type', 'splash')
+        self.root.attributes('-fullscreen', True)
         self.root.geometry("{0}x{1}+0+0".format(self.root.winfo_screenwidth(), self.root.winfo_screenheight()))
         self.root.title(f"CanInterfaceGUI {self.gui_revision}")
         
@@ -152,16 +152,6 @@ class CANGui():
         else:
             self.can_module_optionmenu = ("Test can0", "Test can1")
 
-        # --- Threads
-        t1 = threading.Thread(target=self.threadfunc, daemon=True)
-        t1.start()
-        t2 = threading.Thread(target=self.que_loop, daemon=True)
-        t2.start()
-        t3 = threading.Thread(target=self.sensor_temp, daemon=True)
-        t3.start()
-        t4 = threading.Thread(target=self.temp_var_color, daemon=True)
-        t4.start()
-
         self.test_mode1 = StringVar()
         self.negate = StringVar()
         self.increment = StringVar()
@@ -178,6 +168,16 @@ class CANGui():
         self.mux_list = [self.can0_ckBox_var, self.can1_ckBox_var, self.can2_ckBox_var, self.can3_ckBox_var, self.can4_ckBox_var, self.can5_ckBox_var, self.can6_ckBox_var, self.can7_ckBox_var]
         self.mux_sel = [23, 16, 7]
         self.thread_var = IntVar()
+
+    def threads(self):
+        t1 = threading.Thread(target=self.threadfunc, daemon=True)
+        t1.start()
+        t2 = threading.Thread(target=self.que_loop, daemon=True)
+        t2.start()
+        t3 = threading.Thread(target=self.sensor_temp, daemon=True)
+        t3.start()
+        t4 = threading.Thread(target=self.temp_var_color, daemon=True)
+        t4.start()
 
     def build(self):
         self.can_frame1 = Frame(self.root, highlightbackground='grey', highlightthickness=3)
@@ -340,7 +340,6 @@ class CANGui():
         self.payload_Entry = Entry(self.can_frame2, textvariable=self.payload_entry)
         self.payload_Entry.grid(row = 1, column=5)
 
-        self.root.update()
 
         self.add_to_q = Button(self.can_frame2, text="ADD TO QUE", width=10, command= self.add_to_Q)
         self.add_to_q.grid(row = 1, column=6, padx=(292,0), pady=(0,5))
@@ -528,6 +527,8 @@ class CANGui():
             self.label1.grid(row=0, column=0, padx=50, pady=(50,0))
         
         self.error_interface()
+        self.root.update()
+        self.mux_control()
 
     def build2(self):
         self.dev_can_frame_1 = Frame(self.root_dev)
@@ -879,7 +880,6 @@ class CANGui():
         
     def sensor_temp(self):
         slash_list = ['|','/','-','\\']
-        time.sleep(1)
         for i in range(8):
             point_load = ''
             self.temp_cpu_label.config(text='CPU Temp')
@@ -895,14 +895,15 @@ class CANGui():
         else:
             x = 2
         while True:
-            output = subprocess.check_output(['sensors'])
-            self.temp_int = output.decode().split('\n')[x].split()[1]
-            self.cpu_temp = "CPU "+ self.temp_int
-            self.cpu_sensor.entryconfig(0,label=self.cpu_temp)
-            self.temp_cpu_label.config(text='Temp '+self.cpu_temp)
-            time.sleep(0.5)
-        
-
+            try:
+                output = subprocess.check_output(['sensors'])
+                self.temp_int = output.decode().split('\n')[x].split()[1]
+                self.cpu_temp = "CPU "+ self.temp_int
+                self.cpu_sensor.entryconfig(0,label=self.cpu_temp)
+                self.temp_cpu_label.config(text='Temp '+self.cpu_temp)
+                time.sleep(0.5)
+            except:
+                pass
     def temp_var_color(self):
         time.sleep(15)
         while True:
@@ -913,7 +914,10 @@ class CANGui():
             temp_int = int(temp_int) / 10
 
             if int(temp_int) < 50:
-                self.temp_cpu_label.config(fg=self.default_label_color)
+                try:
+                    self.temp_cpu_label.config(fg=self.default_label_color)
+                except:
+                    self.temp_cpu_label.config(fg='black')
             if int(temp_int) >= 50:
                 self.temp_cpu_label.config(fg='#E39010')
             if int(temp_int) > 70:
