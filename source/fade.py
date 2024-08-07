@@ -131,3 +131,6 @@ def leds_init():
     t6.start()
     t7.start()
     t8.start()
+
+#rgb = rgb_fade()
+#rgb.fade_in(14)
